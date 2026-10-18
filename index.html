@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rakuten Monkeys 樂天桃猿官方售票網</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tailwind Custom Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        rakuten: {
+                            50: '#fdf2f2',
+                            100: '#fbe8e8',
+                            500: '#e31b23', // 樂天經典紅
+                            600: '#c5131b',
+                            700: '#a30f16',
+                            900: '#7a0b10',
+                        },
+                        dark: {
+                            800: '#121212',
+                            900: '#0a0a0a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #0d0d0d;
+            color: #f3f4f6;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121212;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e31b23;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c5131b;
+        }
+        .hero-pattern {
+            background-image: linear-gradient(to right, rgba(10,10,10,0.95), rgba(10,10,10,0.7)), url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-rakuten-500 selection:text-white">
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed top-20 right-5 z-50 transform translate-x-full transition-transform duration-300 bg-zinc-900 border border-rakuten-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center space-x-3">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-rakuten-500 text-xl"></i>
+        <div>
+            <h4 id="toast-title" class="font-bold text-sm">提示訊息</h4>
+            <p id="toast-desc" class="text-xs text-zinc-400">操作成功完成</p>
+        </div>
+    </div>
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-40 bg-dark-900/90 backdrop-blur-md border-b border-zinc-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Logo & Brand -->
+            <a href="#" onclick="switchTab('home')" class="flex items-center space-x-3 group">
+                <div class="w-12 h-12 bg-rakuten-500 rounded-xl flex items-center justify-center font-black text-white text-2xl shadow-lg shadow-rakuten-500/30 group-hover:scale-105 transition-transform">
+                    RM
+                </div>
+                <div>
+                    <span class="block font-black text-lg tracking-wider text-white uppercase italic">Rakuten Monkeys</span>
+                    <span class="block text-xs font-semibold text-rakuten-500 tracking-widest uppercase">Official Ticketing</span>
+                </div>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center space-x-1 lg:space-x-2">
+                <button onclick="switchTab('home')" id="nav-home" class="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-rakuten-500/10 text-rakuten-500 transition-colors">首頁</button>
+                <button onclick="switchTab('schedule')" id="nav-schedule" class="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors">賽程表</button>
+                <button onclick="switchTab('schedule')" id="nav-tickets" class="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors">購票專區</button>
+                <button onclick="switchTab('wallet')" id="nav-wallet" class="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors flex items-center space-x-2">
+                    <i class="fa-solid fa-ticket"></i>
+                    <span>我的票夾</span>
+                    <span id="wallet-badge" class="ml-1 px-1.5 py-0.5 text-xs bg-rakuten-500 text-white rounded-full">0</span>
+                </button>
+                <button onclick="switchTab('member')" id="nav-member" class="px-4 py-2 rounded-lg text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors">會員專區</button>
+            </nav>
+
+            <!-- User Actions -->
+            <div class="hidden md:flex items-center space-x-4">
+                <div class="flex items-center space-x-2 bg-zinc-800/80 px-3 py-1.5 rounded-full border border-zinc-700">
+                    <div class="w-7 h-7 rounded-full bg-gradient-to-tr from-rakuten-500 to-amber-500 flex items-center justify-center text-xs font-bold text-white">猿</div>
+                    <span class="text-xs font-medium text-zinc-200">10棒球魂 VIP</span>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Button -->
+            <div class="md:hidden flex items-center">
+                <button onclick="toggleMobileMenu()" class="text-zinc-300 hover:text-white p-2 focus:outline-none">
+                    <i id="mobile-menu-icon" class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden bg-dark-900 border-b border-zinc-800 px-4 pt-2 pb-4 space-y-2">
+            <button onclick="switchTab('home'); toggleMobileMenu();" class="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold text-white bg-rakuten-500/10 text-rakuten-500">首頁</button>
+            <button onclick="switchTab('schedule'); toggleMobileMenu();" class="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800">賽程表與購票</button>
+            <button onclick="switchTab('wallet'); toggleMobileMenu();" class="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800 flex justify-between items-center">
+                <span>我的票夾</span>
+                <span id="mobile-wallet-badge" class="px-2 py-0.5 text-xs bg-rakuten-500 text-white rounded-full">0</span>
+            </button>
+            <button onclick="switchTab('member'); toggleMobileMenu();" class="block w-full text-left px-4 py-2.5 rounded-lg text-sm font-semibold text-zinc-300 hover:text-white hover:bg-zinc-800">會員專區</button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow">
+
+        <!-- TAB 1: HOME PAGE -->
+        <div id="tab-home" class="space-y-12 pb-16">
+            <!-- Hero Banner Slider -->
+            <div class="relative hero-pattern border-b border-zinc-800 py-20 lg:py-32 overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-t from-dark-900 via-transparent to-transparent"></div>
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div class="max-w-3xl space-y-6">
+                        <div class="inline-flex items-center space-x-2 bg-rakuten-500/20 border border-rakuten-500/40 px-3 py-1 rounded-full text-rakuten-400 text-xs font-bold tracking-wider uppercase">
+                            <span class="w-2 h-2 rounded-full bg-rakuten-500 animate-pulse"></span>
+                            <span>2026 CPBL 上半季主場熱血開戰</span>
+                        </div>
+                        <h1 class="text-4xl sm:text-6xl font-black text-white tracking-tight uppercase italic leading-none">
+                            READY <span class="text-rakuten-500">MONKEYS</span><br>狂猿出擊 捍衛桃園
+                        </h1>
+                        <p class="text-zinc-300 text-base sm:text-lg max-w-xl font-normal">
+                            地表最強勁應援 Rakuten Girls 帶領全場桃猿男兒，桃園國際棒球場等你來吶喊！立即搶購熱區票券，享受震撼棒球饗宴。
+                        </p>
+                        <div class="flex flex-wrap gap-4 pt-2">
+                            <button onclick="openBooking(1)" class="px-8 py-4 bg-rakuten-500 hover:bg-rakuten-600 text-white font-black rounded-xl shadow-lg shadow-rakuten-500/40 transition-all transform hover:-translate-y-0.5 flex items-center space-x-3 uppercase tracking-wider text-sm">
+                                <i class="fa-solid fa-ticket text-lg"></i>
+                                <span>立即搶購主打賽事</span>
+                            </button>
+                            <button onclick="switchTab('schedule')" class="px-8 py-4 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl border border-zinc-700 transition-all flex items-center space-x-2 text-sm">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                <span>完整賽程表</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Featured Match Spotlight Carousel / Cards -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-end mb-8">
+                    <div>
+                        <span class="text-rakuten-500 text-xs font-bold tracking-widest uppercase block mb-1">HOT MATCHES</span>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white uppercase italic">近期主打強檔賽事</h2>
+                    </div>
+                    <button onclick="switchTab('schedule')" class="text-sm font-semibold text-zinc-400 hover:text-white flex items-center space-x-1 transition-colors">
+                        <span>查看全部賽事</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="featured-matches-grid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Stadium Zone Highlights -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+                <div class="bg-gradient-to-r from-zinc-900 to-dark-800 border border-zinc-800 rounded-3xl p-8 lg:p-12 relative overflow-hidden">
+                    <div class="absolute -right-20 -bottom-20 w-96 h-96 bg-rakuten-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
+                        <div class="space-y-6">
+                            <span class="text-rakuten-500 text-xs font-bold tracking-widest uppercase">TAOYUAN STADIUM</span>
+                            <h2 class="text-3xl font-black text-white uppercase italic">桃園國際棒球場<br>全猿主場沉浸體驗</h2>
+                            <p class="text-zinc-300 text-sm leading-relaxed">
+                                內野熱區（東西下H-K區）緊鄰應援舞台，與 Rakuten Girls 近距離互動，感受最強應援震撼！本壘後方尊爵席提供極佳視野與頂級尊榮享受。
+                            </p>
+                            <div class="grid grid-cols-2 gap-4 pt-2">
+                                <div class="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800">
+                                    <span class="block text-2xl font-black text-rakuten-500 mb-1">20,000+</span>
+                                    <span class="text-xs text-zinc-400 font-medium">座位容納人數</span>
+                                </div>
+                                <div class="bg-zinc-900/80 p-4 rounded-xl border border-zinc-800">
+                                    <span class="block text-2xl font-black text-white mb-1">10號隊友</span>
+                                    <span class="text-xs text-zinc-400 font-medium">最強應援後盾</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="space-y-4">
+                                <div class="rounded-2xl overflow-hidden shadow-lg border border-zinc-800 h-48 bg-zinc-800">
+                                    <img src="https://images.unsplash.com/photo-1566958769312-827fb14f1454?auto=format&fit=crop&w=600&q=80" alt="Stadium" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                                </div>
+                                <div class="rounded-2xl overflow-hidden shadow-lg border border-zinc-800 h-36 bg-zinc-800">
+                                    <img src="https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&w=600&q=80" alt="Cheer" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                                </div>
+                            </div>
+                            <div class="space-y-4 pt-6">
+                                <div class="rounded-2xl overflow-hidden shadow-lg border border-zinc-800 h-36 bg-zinc-800">
+                                    <img src="https://images.unsplash.com/photo-1471295253337-3ceaaedc4023?auto=format&fit=crop&w=600&q=80" alt="Fans" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                                </div>
+                                <div class="rounded-2xl overflow-hidden shadow-lg border border-zinc-800 h-48 bg-zinc-800">
+                                    <img src="https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=600&q=80" alt="Baseball" class="w-full h-full object-cover hover:scale-105 transition-transform duration-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: SCHEDULE & TICKETS -->
+        <div id="tab-schedule" class="hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+            <div>
+                <span class="text-rakuten-500 text-xs font-bold tracking-widest uppercase block mb-1">SCHEDULE & TICKETS</span>
+                <h1 class="text-3xl font-black text-white uppercase italic">賽程表與線上購票</h1>
+                <p class="text-zinc-400 text-sm mt-1">選取您想觀賞的主場賽事，點擊購票即能進行線上選位與結帳。</p>
+            </div>
+
+            <!-- Filter Toolbar -->
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-4 sm:p-6 flex flex-wrap gap-4 items-center justify-between">
+                <div class="flex flex-wrap gap-3 items-center">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-1">月份篩選</label>
+                        <select id="filter-month" onchange="filterMatches()" class="bg-zinc-800 border border-zinc-700 text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-rakuten-500">
+                            <option value="all">全部月份 (2026)</option>
+                            <option value="04">4月</option>
+                            <option value="05">5月</option>
+                            <option value="06">6月</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-1">對戰球隊</label>
+                        <select id="filter-team" onchange="filterMatches()" class="bg-zinc-800 border border-zinc-700 text-white text-sm rounded-xl px-4 py-2.5 focus:outline-none focus:border-rakuten-500">
+                            <option value="all">全部球隊</option>
+                            <option value="中信兄弟">中信兄弟</option>
+                            <option value="統一獅">統一獅</option>
+                            <option value="味全龍">味全龍</option>
+                            <option value="富邦悍將">富邦悍將</option>
+                            <option value="台鋼雄鷹">台鋼雄鷹</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="text-xs text-zinc-400 font-medium">
+                    場地：<span class="text-white font-bold">桃園國際棒球場 (主場)</span>
+                </div>
+            </div>
+
+            <!-- Match List -->
+            <div class="space-y-4" id="matches-list-container">
+                <!-- Populated dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- TAB 3: MY TICKETS WALLET -->
+        <div id="tab-wallet" class="hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <span class="text-rakuten-500 text-xs font-bold tracking-widest uppercase block mb-1">DIGITAL WALLET</span>
+                    <h1 class="text-3xl font-black text-white uppercase italic">我的電子票夾</h1>
+                    <p class="text-zinc-400 text-sm mt-1">入場時出示下方票券 QR Code 即可快速掃描進場。</p>
+                </div>
+                <div class="bg-zinc-900 border border-zinc-800 px-4 py-2 rounded-xl text-sm font-semibold text-zinc-300">
+                    已收藏票券：<span id="wallet-count-text" class="text-rakuten-500 font-bold">0</span> 張
+                </div>
+            </div>
+
+            <div id="wallet-tickets-container" class="space-y-6">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <!-- TAB 4: MEMBER ZONE -->
+        <div id="tab-member" class="hidden max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
+            <div>
+                <span class="text-rakuten-500 text-xs font-bold tracking-widest uppercase block mb-1">MEMBER CENTER</span>
+                <h1 class="text-3xl font-black text-white uppercase italic">10號隊友 會員專區</h1>
+                <p class="text-zinc-400 text-sm mt-1">管理您的會員點數、個人資料與專屬購票優惠權益。</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center space-y-3">
+                    <div class="w-16 h-16 bg-rakuten-500/20 text-rakuten-500 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
+                        <i class="fa-solid fa-crown"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">VIP 尊榮會員</h3>
+                    <p class="text-xs text-zinc-400">有效期限：2026-12-31</p>
+                    <div class="pt-2">
+                        <span class="inline-block px-3 py-1 bg-rakuten-500 text-white text-xs font-bold rounded-full">享有優先購票權</span>
+                    </div>
+                </div>
+
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center space-y-3">
+                    <div class="w-16 h-16 bg-amber-500/20 text-amber-500 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">猿氣點數 (Monkeys Point)</h3>
+                    <p class="text-3xl font-black text-white pt-2">2,680 <span class="text-xs font-normal text-zinc-400">點</span></p>
+                    <p class="text-xs text-zinc-400">可折抵官網周邊或門票</p>
+                </div>
+
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-center space-y-3">
+                    <div class="w-16 h-16 bg-blue-500/20 text-blue-500 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold">
+                        <i class="fa-solid fa-ticket-simple"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white">本季觀賽紀錄</h3>
+                    <p class="text-3xl font-black text-white pt-2">8 <span class="text-xs font-normal text-zinc-400">場</span></p>
+                    <p class="text-xs text-zinc-400">熱血桃猿球迷認證</p>
+                </div>
+            </div>
+
+            <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 space-y-6">
+                <h3 class="text-xl font-bold text-white">會員個人資料</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-2">會員姓名</label>
+                        <input type="text" value="王小明 (Monkeys Fan)" disabled class="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-xl px-4 py-3 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-2">電子信箱</label>
+                        <input type="email" value="monkeys10@rakuten.tw" disabled class="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-xl px-4 py-3 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-2">手機號碼</label>
+                        <input type="text" value="0912-345-678" disabled class="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-xl px-4 py-3 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-zinc-400 mb-2">預設取票方式</label>
+                        <input type="text" value="APP 電子票券 QR Code" disabled class="w-full bg-zinc-800 border border-zinc-700 text-zinc-300 rounded-xl px-4 py-3 text-sm">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- INTERACTIVE TICKET BOOKING MODAL (4 STEPS) -->
+    <div id="booking-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-zinc-900 border border-zinc-800 rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl relative my-8">
+            <!-- Modal Header -->
+            <div class="bg-dark-900 px-6 py-4 border-b border-zinc-800 flex items-center justify-between">
+                <div>
+                    <span class="text-rakuten-500 text-xs font-bold tracking-widest uppercase">TICKET BOOKING PROCESS</span>
+                    <h3 id="modal-match-title" class="text-lg font-black text-white uppercase">線上快速購票</h3>
+                </div>
+                <button onclick="closeBookingModal()" class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white flex items-center justify-center transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Steps Indicator -->
+            <div class="bg-zinc-900/50 px-6 py-4 border-b border-zinc-800 flex justify-between items-center text-xs font-bold text-zinc-400">
+                <div id="step-indicator-1" class="flex items-center space-x-2 text-rakuten-500">
+                    <span class="w-6 h-6 rounded-full bg-rakuten-500 text-white flex items-center justify-center text-xs">1</span>
+                    <span>選擇票種與張數</span>
+                </div>
+                <div class="w-8 h-px bg-zinc-700"></div>
+                <div id="step-indicator-2" class="flex items-center space-x-2 text-zinc-500">
+                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-xs">2</span>
+                    <span>座位區與選位</span>
+                </div>
+                <div class="w-8 h-px bg-zinc-700"></div>
+                <div id="step-indicator-3" class="flex items-center space-x-2 text-zinc-500">
+                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-xs">3</span>
+                    <span>填寫與付款</span>
+                </div>
+                <div class="w-8 h-px bg-zinc-700"></div>
+                <div id="step-indicator-4" class="flex items-center space-x-2 text-zinc-500">
+                    <span class="w-6 h-6 rounded-full bg-zinc-800 text-zinc-400 flex items-center justify-center text-xs">4</span>
+                    <span>完成訂單</span>
+                </div>
+            </div>
+
+            <!-- Modal Body (Steps Container) -->
+            <div class="p-6 sm:p-8 space-y-6">
+
+                <!-- STEP 1: Select Ticket Type & Qty -->
+                <div id="booking-step-1" class="space-y-6">
+                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">選擇票種與張數</h4>
+                    <div class="space-y-3" id="ticket-types-list">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button onclick="goToStep(2)" class="px-6 py-3 bg-rakuten-500 hover:bg-rakuten-600 text-white font-bold rounded-xl shadow-lg shadow-rakuten-500/30 text-sm flex items-center space-x-2">
+                            <span>下一步：選擇座位區</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Seat Selection Map Simulator -->
+                <div id="booking-step-2" class="hidden space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-sm font-bold text-white uppercase tracking-wider">桃園棒球場座位區示意圖</h4>
+                        <span class="text-xs text-zinc-400">點擊下方區塊選擇您想入座的區域</span>
+                    </div>
+
+                    <!-- Baseball Field Visual Layout -->
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 relative flex flex-col items-center justify-center space-y-4">
+                        <!-- Home Plate & Diamond Area -->
+                        <div class="w-32 h-32 bg-zinc-900 border border-zinc-700 rotate-45 flex items-center justify-center relative shadow-inner">
+                            <span class="-rotate-45 text-xs font-black text-zinc-500 uppercase tracking-widest">內野紅土區</span>
+                        </div>
+
+                        <!-- Stands Grid -->
+                        <div class="grid grid-cols-3 gap-3 w-full max-w-lg">
+                            <button onclick="selectZone('內野下層 1壘熱區 (H-K區)', 550)" class="zone-btn bg-zinc-900 hover:bg-rakuten-500/20 border border-zinc-700 hover:border-rakuten-500 p-4 rounded-xl text-center transition-all group">
+                                <span class="block text-xs font-bold text-white group-hover:text-rakuten-400">1壘下層熱區 (H-K)</span>
+                                <span class="block text-[10px] text-zinc-400 mt-1">NT$ 550 (應援核心)</span>
+                            </button>
+                            <button onclick="selectZone('本壘後方尊爵席 (A-C區)', 800)" class="zone-btn bg-zinc-900 hover:bg-rakuten-500/20 border border-zinc-700 hover:border-rakuten-500 p-4 rounded-xl text-center transition-all group">
+                                <span class="block text-xs font-bold text-white group-hover:text-rakuten-400">本壘尊爵席 (A-C)</span>
+                                <span class="block text-[10px] text-zinc-400 mt-1">NT$ 800 (最佳視野)</span>
+                            </button>
+                            <button onclick="selectZone('內野下層 3壘熱區 (E-G區)', 550)" class="zone-btn bg-zinc-900 hover:bg-rakuten-500/20 border border-zinc-700 hover:border-rakuten-500 p-4 rounded-xl text-center transition-all group">
+                                <span class="block text-xs font-bold text-white group-hover:text-rakuten-400">3壘下層熱區 (E-G)</span>
+                                <span class="block text-[10px] text-zinc-400 mt-1">NT$ 550 (客隊/猿氣)</span>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 w-full max-w-lg">
+                            <button onclick="selectZone('內野上層一般席 (VIP)', 400)" class="zone-btn bg-zinc-900 hover:bg-rakuten-500/20 border border-zinc-700 hover:border-rakuten-500 p-4 rounded-xl text-center transition-all group">
+                                <span class="block text-xs font-bold text-white group-hover:text-rakuten-400">內野上層一般席</span>
+                                <span class="block text-[10px] text-zinc-400 mt-1">NT$ 400</span>
+                            </button>
+                            <button onclick="selectZone('外野自由席 (全區)', 300)" class="zone-btn bg-zinc-900 hover:bg-rakuten-500/20 border border-zinc-700 hover:border-rakuten-500 p-4 rounded-xl text-center transition-all group">
+                                <span class="block text-xs font-bold text-white group-hover:text-rakuten-400">外野自由席</span>
+                                <span class="block text-[10px] text-zinc-400 mt-1">NT$ 300</span>
+                            </button>
+                        </div>
+
+                        <!-- Selected Zone Indicator -->
+                        <div id="selected-zone-display" class="w-full bg-zinc-900 border border-rakuten-500/50 p-3 rounded-xl text-center text-xs text-zinc-300">
+                            目前選擇：<span id="chosen-zone-text" class="text-rakuten-500 font-bold">1壘下層熱區 (H-K區)</span> | 單價：NT$ <span id="chosen-zone-price">550</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button onclick="goToStep(1)" class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-sm">上一步</button>
+                        <button onclick="goToStep(3)" class="px-6 py-3 bg-rakuten-500 hover:bg-rakuten-600 text-white font-bold rounded-xl shadow-lg shadow-rakuten-500/30 text-sm flex items-center space-x-2">
+                            <span>下一步：填寫與付款</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Info & Payment Simulation -->
+                <div id="booking-step-3" class="hidden space-y-6">
+                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">填寫取票人資訊與付款方式</h4>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 mb-1">取票人姓名</label>
+                                <input type="text" id="buyer-name" value="王小明" class="w-full bg-zinc-800 border border-zinc-700 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rakuten-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-zinc-400 mb-1">手機號碼 (接收通知)</label>
+                                <input type="text" id="buyer-phone" value="0912345678" class="w-full bg-zinc-800 border border-zinc-700 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-rakuten-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-zinc-400 mb-2">付款方式模擬</label>
+                            <div class="grid grid-cols-3 gap-3">
+                                <label class="cursor-pointer bg-zinc-800 border border-rakuten-500 rounded-xl p-3 flex flex-col items-center justify-center space-y-1 text-center">
+                                    <input type="radio" name="payment" checked class="accent-rakuten-500">
+                                    <span class="text-xs font-bold text-white mt-1">線上信用卡</span>
+                                </label>
+                                <label class="cursor-pointer bg-zinc-800 border border-zinc-700 hover:border-zinc-500 rounded-xl p-3 flex flex-col items-center justify-center space-y-1 text-center">
+                                    <input type="radio" name="payment" class="accent-rakuten-500">
+                                    <span class="text-xs font-bold text-white mt-1">Apple Pay</span>
+                                </label>
+                                <label class="cursor-pointer bg-zinc-800 border border-zinc-700 hover:border-zinc-500 rounded-xl p-3 flex flex-col items-center justify-center space-y-1 text-center">
+                                    <input type="radio" name="payment" class="accent-rakuten-500">
+                                    <span class="text-xs font-bold text-white mt-1">超商代碼繳費</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Order Summary Box -->
+                        <div class="bg-zinc-950 border border-zinc-800 p-4 rounded-xl space-y-2 text-xs">
+                            <div class="flex justify-between text-zinc-400">
+                                <span>賽事：</span>
+                                <span id="summary-match" class="text-white font-bold">Rakuten Monkeys vs 中信兄弟</span>
+                            </div>
+                            <div class="flex justify-between text-zinc-400">
+                                <span>座位區：</span>
+                                <span id="summary-zone" class="text-white font-bold">1壘下層熱區 (H-K區)</span>
+                            </div>
+                            <div class="flex justify-between text-zinc-400">
+                                <span>張數與票種：</span>
+                                <span id="summary-qty-type" class="text-white font-bold">全票 x 2</span>
+                            </div>
+                            <div class="border-t border-zinc-800 pt-2 flex justify-between text-sm font-bold">
+                                <span class="text-white">總金額：</span>
+                                <span id="summary-total-price" class="text-rakuten-500 text-base">NT$ 1,100</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between pt-4">
+                        <button onclick="goToStep(2)" class="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-bold rounded-xl text-sm">上一步</button>
+                        <button onclick="completeOrder()" class="px-8 py-3 bg-rakuten-500 hover:bg-rakuten-600 text-white font-black rounded-xl shadow-lg shadow-rakuten-500/40 text-sm uppercase tracking-wider flex items-center space-x-2">
+                            <span>確認付款並成立訂單</span>
+                            <i class="fa-solid fa-check"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Success & QR Code Result -->
+                <div id="booking-step-4" class="hidden text-center space-y-6 py-4">
+                    <div class="w-20 h-20 bg-emerald-500/20 text-emerald-500 rounded-full mx-auto flex items-center justify-center text-3xl animate-bounce">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-2xl font-black text-white uppercase italic">恭喜！訂單成立成功</h4>
+                        <p class="text-zinc-400 text-xs">您的電子票券已自動存入「我的票夾」，進場時請出示 QR Code。</p>
+                    </div>
+
+                    <!-- Simulated QR Card -->
+                    <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 max-w-sm mx-auto space-y-4 text-left">
+                        <div class="flex justify-between items-center border-b border-zinc-800 pb-3">
+                            <span class="text-xs font-black text-rakuten-500 uppercase">Rakuten Monkeys Pass</span>
+                            <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-bold">已付款</span>
+                        </div>
+                        <div class="space-y-1 text-xs">
+                            <p class="text-white font-bold text-sm" id="qr-ticket-match">Rakuten Monkeys vs 中信兄弟</p>
+                            <p class="text-zinc-400">時間：2026-04-20 (日) 17:05</p>
+                            <p class="text-zinc-400">地點：桃園國際棒球場</p>
+                            <p class="text-zinc-400" id="qr-ticket-zone">座位：1壘下層熱區 (H-K區) 12排 08號</p>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl flex flex-col items-center justify-center space-y-2">
+                            <!-- SVG QR Code Mock -->
+                            <svg class="w-32 h-32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM18 18h3v3h-3z" fill="#000"/>
+                            </svg>
+                            <span class="text-[10px] font-mono text-zinc-600">RM-2026-0420-88391</span>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 flex justify-center space-x-4">
+                        <button onclick="closeBookingModal(); switchTab('wallet');" class="px-8 py-3 bg-rakuten-500 hover:bg-rakuten-600 text-white font-bold rounded-xl shadow-lg shadow-rakuten-500/30 text-sm">
+                            前往「我的票夾」查看
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark-900 border-t border-zinc-800 py-12 text-zinc-400 text-xs">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="space-y-4">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-rakuten-500 rounded-xl flex items-center justify-center font-black text-white text-xl">
+                        RM
+                    </div>
+                    <span class="font-black text-white tracking-wider text-base uppercase italic">Rakuten Monkeys</span>
+                </div>
+                <p class="text-zinc-500">
+                    Rakuten Monkeys 樂天桃猿官方棒球隊售票網站。桃園國際棒球場主場賽事線上劃位與電子票券服務。
+                </p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white uppercase tracking-wider mb-3">快速導覽</h4>
+                <ul class="space-y-2">
+                    <li><a href="#" onclick="switchTab('schedule')" class="hover:text-white transition-colors">賽程表與購票</a></li>
+                    <li><a href="#" onclick="switchTab('wallet')" class="hover:text-white transition-colors">我的票夾</a></li>
+                    <li><a href="#" onclick="switchTab('member')" class="hover:text-white transition-colors">10號隊友會員</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white uppercase tracking-wider mb-3">售票服務</h4>
+                <ul class="space-y-2">
+                    <li><span class="hover:text-white cursor-pointer">購票Q&A與退票規範</span></li>
+                    <li><span class="hover:text-white cursor-pointer">桃園球場交通指引</span></li>
+                    <li><span class="hover:text-white cursor-pointer">身心障礙席購票說明</span></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white uppercase tracking-wider mb-3">關注我們</h4>
+                <div class="flex space-x-3 text-lg">
+                    <a href="#" class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-rakuten-500 hover:text-white flex items-center justify-center text-zinc-300 transition-all"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-rakuten-500 hover:text-white flex items-center justify-center text-zinc-300 transition-all"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-xl bg-zinc-800 hover:bg-rakuten-500 hover:text-white flex items-center justify-center text-zinc-300 transition-all"><i class="fa-brands fa-youtube"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-zinc-800/80 mt-8 pt-8 text-center text-zinc-600">
+            &copy; 2026 Rakuten Monkeys Baseball Team. All Rights Reserved. Designed for Professional Baseball Fans.
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Mock Database of Matches
+        const matchesData = [
+            { id: 1, date: '2026-04-20', time: '17:05', month: '04', opponent: '中信兄弟', venue: '桃園國際棒球場', status: '熱賣中', tag: '經典對決', bg: 'from-amber-900/40' },
+            { id: 2, date: '2026-04-21', time: '18:35', month: '04', opponent: '中信兄弟', venue: '桃園國際棒球場', status: '熱賣中', tag: '主題日', bg: 'from-amber-900/40' },
+            { id: 3, date: '2026-05-03', time: '17:05', month: '05', opponent: '統一獅', venue: '桃園國際棒球場', status: '熱賣中', tag: '強敵交手', bg: 'from-orange-900/40' },
+            { id: 4, date: '2026-05-04', time: '17:05', month: '05', opponent: '統一獅', venue: '桃園國際棒球場', status: '熱賣中', tag: '週末狂歡', bg: 'from-orange-900/40' },
+            { id: 5, date: '2026-05-15', time: '18:35', month: '05', opponent: '味全龍', venue: '桃園國際棒球場', status: '熱賣中', tag: '龍猿大戰', bg: 'from-red-900/40' },
+            { id: 6, date: '2026-06-02', time: '18:35', month: '06', opponent: '富邦悍將', venue: '桃園國際棒球場', status: '熱賣中', tag: '金控大戰', bg: 'from-blue-900/40' },
+            { id: 7, date: '2026-06-12', time: '18:35', month: '06', opponent: '台鋼雄鷹', venue: '桃園國際棒球場', status: '熱賣中', tag: '新人王對決', bg: 'from-emerald-900/40' }
+        ];
+
+        // Ticket Types data for Step 1
+        const ticketTypesData = [
+            { id: 'full', name: '全票 (Regular Adult)', price: 550, desc: '一般球迷適用，熱血應援首選' },
+            { id: 'concession', name: '優待票 (Student/Senior)', price: 450, desc: '學生、65歲以上長者或身障陪同（需憑證）' },
+            { id: 'vip', name: '本壘尊爵席 (VIP Seating)', price: 800, desc: '特等視角，贈送專屬應援毛巾與礦泉水' }
+        ];
+
+        // Active Booking State
+        let currentBookingMatch = null;
+        let selectedTicketType = ticketTypesData[0];
+        let selectedZone = { name: '1壘下層熱區 (H-K區)', price: 550 };
+        let ticketQty = 2;
+
+        // User Wallet Tickets
+        let userWallet = [
+            {
+                id: 'RM-2026-0410-1039',
+                matchTitle: 'Rakuten Monkeys vs 味全龍',
+                date: '2026-04-28 (二) 18:35',
+                venue: '桃園國際棒球場',
+                zone: '1壘下層熱區 (H-K區) 08排 10號',
+                price: 550,
+                type: '全票 x 1',
+                status: '可使用'
+            }
+        ];
+
+        // Initialize App on Load
+        window.onload = function() {
+            renderFeaturedMatches();
+            renderMatchesList(matchesData);
+            renderTicketTypes();
+            updateWalletUI();
+        };
+
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            const tabs = ['home', 'schedule', 'wallet', 'member'];
+            tabs.forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                const navEl = document.getElementById(`nav-${t}`);
+                if (el) el.classList.add('hidden');
+                if (navEl) {
+                    navEl.classList.remove('bg-rakuten-500/10', 'text-rakuten-500');
+                    navEl.classList.add('text-zinc-300', 'hover:text-white', 'hover:bg-zinc-800');
+                }
+            });
+
+            const targetEl = document.getElementById(`tab-${tabId}`);
+            const targetNav = document.getElementById(`nav-${tabId}`);
+            if (targetEl) targetEl.classList.remove('hidden');
+            if (targetNav) {
+                targetNav.classList.remove('text-zinc-300', 'hover:text-white', 'hover:bg-zinc-800');
+                targetNav.classList.add('bg-rakuten-500/10', 'text-rakuten-500');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Mobile Menu Toggle
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Render Home Featured Matches
+        function renderFeaturedMatches() {
+            const container = document.getElementById('featured-matches-grid');
+            const featured = matchesData.slice(0, 3);
+            container.innerHTML = featured.map(m => `
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 relative overflow-hidden group hover:border-rakuten-500/50 transition-all">
+                    <div class="absolute top-0 right-0 w-32 h-32 bg-rakuten-500/5 rounded-full blur-2xl group-hover:bg-rakuten-500/15 transition-all"></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <span class="px-3 py-1 bg-rakuten-500/20 text-rakuten-400 text-xs font-bold rounded-full">${m.tag}</span>
+                        <span class="text-xs text-zinc-400 font-medium">${m.date} (${m.time})</span>
+                    </div>
+                    <div class="space-y-3 mb-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-rakuten-500 flex items-center justify-center font-black text-white text-sm">RM</div>
+                                <span class="font-black text-white text-base">樂天桃猿</span>
+                            </div>
+                            <span class="text-xs font-black text-zinc-500 italic">VS</span>
+                            <div class="flex items-center space-x-3">
+                                <span class="font-black text-white text-base text-right">${m.opponent}</span>
+                                <div class="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center font-black text-zinc-300 text-sm">客</div>
+                            </div>
+                        </div>
+                        <p class="text-xs text-zinc-400"><i class="fa-solid fa-location-dot text-rakuten-500 mr-1"></i> ${m.venue}</p>
+                    </div>
+                    <button onclick="openBooking(${m.id})" class="w-full py-3 bg-zinc-800 hover:bg-rakuten-500 text-white font-bold rounded-xl text-sm transition-colors flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-ticket"></i>
+                        <span>立即購票</span>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Render Schedule List
+        function renderMatchesList(list) {
+            const container = document.getElementById('matches-list-container');
+            if (list.length === 0) {
+                container.innerHTML = `<div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center text-zinc-400">沒有符合條件的賽事。</div>`;
+                return;
+            }
+            container.innerHTML = list.map(m => `
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 flex flex-col md:flex-row items-center justify-between gap-4 hover:border-zinc-700 transition-all">
+                    <div class="flex items-center space-x-4 w-full md:w-auto">
+                        <div class="w-14 h-14 bg-dark-900 border border-zinc-800 rounded-xl flex flex-col items-center justify-center text-center">
+                            <span class="text-[10px] text-zinc-400 uppercase font-bold">2026</span>
+                            <span class="text-sm font-black text-white">${m.month}/${m.date.split('-')[2]}</span>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2 mb-1">
+                                <span class="px-2 py-0.5 bg-rakuten-500/20 text-rakuten-400 text-[10px] font-bold rounded-md">${m.tag}</span>
+                                <span class="text-xs text-zinc-400">${m.time} 開賽</span>
+                            </div>
+                            <h3 class="text-base font-black text-white">樂天桃猿 <span class="text-rakuten-500 italic">VS</span> ${m.opponent}</h3>
+                            <p class="text-xs text-zinc-400 mt-0.5"><i class="fa-solid fa-location-dot text-rakuten-500 mr-1"></i> ${m.venue}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3 w-full md:w-auto justify-end">
+                        <span class="text-xs font-semibold px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20">${m.status}</span>
+                        <button onclick="openBooking(${m.id})" class="px-6 py-3 bg-rakuten-500 hover:bg-rakuten-600 text-white font-black rounded-xl text-sm shadow-lg shadow-rakuten-500/20 transition-all flex items-center space-x-2">
+                            <i class="fa-solid fa-ticket"></i>
+                            <span>購票</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter Matches
+        function filterMatches() {
+            const month = document.getElementById('filter-month').value;
+            const team = document.getElementById('filter-team').value;
+
+            let filtered = matchesData;
+            if (month !== 'all') {
+                filtered = filtered.filter(m => m.month === month);
+            }
+            if (team !== 'all') {
+                filtered = filtered.filter(m => m.opponent === team);
+            }
+            renderMatchesList(filtered);
+        }
+
+        // Render Ticket Types in Step 1
+        function renderTicketTypes() {
+            const container = document.getElementById('ticket-types-list');
+            container.innerHTML = ticketTypesData.map((t, idx) => `
+                <label onclick="selectTicketType('${t.id}')" class="cursor-pointer block bg-zinc-800/80 border ${idx === 0 ? 'border-rakuten-500 bg-rakuten-500/10' : 'border-zinc-700'} rounded-xl p-4 transition-all ticket-type-card" data-id="${t.id}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="block text-sm font-bold text-white">${t.name}</span>
+                            <span class="block text-xs text-zinc-400 mt-0.5">${t.desc}</span>
+                        </div>
+                        <span class="text-base font-black text-rakuten-500">NT$ ${t.price}</span>
+                    </div>
+                </label>
+            `).join('');
+        }
+
+        function selectTicketType(typeId) {
+            selectedTicketType = ticketTypesData.find(t => t.id === typeId);
+            document.querySelectorAll('.ticket-type-card').forEach(el => {
+                if (el.getAttribute('data-id') === typeId) {
+                    el.classList.add('border-rakuten-500', 'bg-rakuten-500/10');
+                    el.classList.remove('border-zinc-700');
+                } else {
+                    el.classList.remove('border-rakuten-500', 'bg-rakuten-500/10');
+                    el.classList.add('border-zinc-700');
+                }
+            });
+        }
+
+        // Open Booking Modal for Match ID
+        function openBooking(matchId) {
+            currentBookingMatch = matchesData.find(m => m.id === matchId);
+            if (!currentBookingMatch) currentBookingMatch = matchesData[0];
+
+            document.getElementById('modal-match-title').innerText = `購票：樂天桃猿 vs ${currentBookingMatch.opponent} (${currentBookingMatch.date})`;
+            goToStep(1);
+            document.getElementById('booking-modal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() {
+            document.getElementById('booking-modal').classList.add('hidden');
+        }
+
+        // Modal Step Controller
+        function goToStep(step) {
+            for (let i = 1; i <= 4; i++) {
+                const stepEl = document.getElementById(`booking-step-${i}`);
+                const indEl = document.getElementById(`step-indicator-${i}`);
+                if (stepEl) stepEl.classList.add('hidden');
+                if (indEl) {
+                    indEl.classList.remove('text-rakuten-500');
+                    indEl.classList.add('text-zinc-500');
+                    const numSpan = indEl.querySelector('span:first-child');
+                    if (numSpan) {
+                        numSpan.classList.remove('bg-rakuten-500', 'text-white');
+                        numSpan.classList.add('bg-zinc-800', 'text-zinc-400');
+                    }
+                }
+            }
+
+            const targetStep = document.getElementById(`booking-step-${step}`);
+            const targetInd = document.getElementById(`step-indicator-${step}`);
+            if (targetStep) targetStep.classList.remove('hidden');
+            if (targetInd) {
+                targetInd.classList.remove('text-zinc-500');
+                targetInd.classList.add('text-rakuten-500');
+                const numSpan = targetInd.querySelector('span:first-child');
+                if (numSpan) {
+                    numSpan.classList.remove('bg-zinc-800', 'text-zinc-400');
+                    numSpan.classList.add('bg-rakuten-500', 'text-white');
+                }
+            }
+
+            // Populate Summary if step 3
+            if (step === 3 && currentBookingMatch) {
+                document.getElementById('summary-match').innerText = `Rakuten Monkeys vs ${currentBookingMatch.opponent}`;
+                document.getElementById('summary-zone').innerText = selectedZone.name;
+                document.getElementById('summary-qty-type').innerText = `${selectedTicketType.name.split(' ')[0]} x 2`;
+                const total = selectedZone.price * 2;
+                document.getElementById('summary-total-price').innerText = `NT$ ${total}`;
+            }
+
+            // Populate Success if step 4
+            if (step === 4 && currentBookingMatch) {
+                document.getElementById('qr-ticket-match').innerText = `Rakuten Monkeys vs ${currentBookingMatch.opponent}`;
+                document.getElementById('qr-ticket-zone').innerText = `${selectedZone.name} 12排 08號`;
+            }
+        }
+
+        // Select Seat Zone
+        function selectZone(name, price) {
+            selectedZone = { name, price };
+            document.getElementById('chosen-zone-text').innerText = name;
+            document.getElementById('chosen-zone-price').innerText = price;
+            showToast('已選擇座位區：' + name, 'success');
+        }
+
+        // Complete Order & Add to Wallet
+        function completeOrder() {
+            const newTicket = {
+                id: 'RM-' + Math.floor(100000 + Math.random() * 900000),
+                matchTitle: `Rakuten Monkeys vs ${currentBookingMatch.opponent}`,
+                date: `${currentBookingMatch.date} (${currentBookingMatch.time})`,
+                venue: currentBookingMatch.venue,
+                zone: `${selectedZone.name} 12排 08號`,
+                price: selectedZone.price * 2,
+                type: `${selectedTicketType.name.split(' ')[0]} x 2`,
+                status: '可使用'
+            };
+
+            userWallet.unshift(newTicket);
+            updateWalletUI();
+            goToStep(4);
+            showToast('訂單付款成功！電子票券已存入票夾', 'success');
+        }
+
+        // Update Wallet UI
+        function updateWalletUI() {
+            const count = userWallet.length;
+            document.getElementById('wallet-badge').innerText = count;
+            document.getElementById('mobile-wallet-badge').innerText = count;
+            document.getElementById('wallet-count-text').innerText = count;
+
+            const container = document.getElementById('wallet-tickets-container');
+            if (count === 0) {
+                container.innerHTML = `<div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-8 text-center text-zinc-400">目前票夾尚無票券，請至賽程表選購。</div>`;
+                return;
+            }
+
+            container.innerHTML = userWallet.map(t => `
+                <div class="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-2 bg-rakuten-500"></div>
+                    <div class="space-y-2 flex-grow pl-2">
+                        <div class="flex items-center space-x-3">
+                            <span class="px-2.5 py-1 bg-rakuten-500 text-white text-[10px] font-bold rounded-md uppercase">電子票券</span>
+                            <span class="text-xs text-emerald-400 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i> ${t.status}</span>
+                            <span class="text-xs text-zinc-500 font-mono">ID: ${t.id}</span>
+                        </div>
+                        <h3 class="text-lg font-black text-white">${t.matchTitle}</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-zinc-400 pt-1">
+                            <div><i class="fa-solid fa-calendar-days text-rakuten-500 mr-1.5"></i> ${t.date}</div>
+                            <div><i class="fa-solid fa-location-dot text-rakuten-500 mr-1.5"></i> ${t.venue}</div>
+                            <div><i class="fa-solid fa-couch text-rakuten-500 mr-1.5"></i> ${t.zone}</div>
+                            <div><i class="fa-solid fa-ticket text-rakuten-500 mr-1.5"></i> ${t.type} (NT$ ${t.price})</div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl flex flex-col items-center justify-center space-y-1 shrink-0">
+                        <svg class="w-24 h-24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM18 18h3v3h-3z" fill="#000"/>
+                        </svg>
+                        <span class="text-[9px] font-mono text-zinc-600">入场掃描 QR Code</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const title = document.getElementById('toast-title');
+            const desc = document.getElementById('toast-desc');
+            const icon = document.getElementById('toast-icon');
+
+            title.innerText = type === 'success' ? '操作成功' : '提示';
+            desc.innerText = message;
+            icon.className = type === 'success' ? 'fa-solid fa-circle-check text-rakuten-500 text-xl' : 'fa-solid fa-circle-exclamation text-amber-500 text-xl';
+
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
